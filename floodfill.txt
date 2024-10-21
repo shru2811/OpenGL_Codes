@@ -1,0 +1,127 @@
+#include <GL/glut.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+
+#define WINDOW_WIDTH 400
+#define WINDOW_HEIGHT 400
+
+int pixels[WINDOW_WIDTH][WINDOW_HEIGHT] = {0};
+int queue[WINDOW_WIDTH * WINDOW_HEIGHT][2];
+int front = 0, rear = 0;
+bool filling = false;
+
+void init() {
+    glClearColor(1.0, 1.0, 1.0, 1.0);
+    gluOrtho2D(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT);
+}
+
+void drawPixel(int x, int y) {
+    glBegin(GL_POINTS);
+    glVertex2i(x, y);
+    glEnd();
+    glFlush();
+}
+
+void drawPolygon() {
+    glColor3f(0.0, 0.0, 0.0);
+    glBegin(GL_LINE_LOOP);
+    glVertex2i(100, 100);
+    glVertex2i(200, 100);
+    glVertex2i(200, 200);
+    glVertex2i(100, 200);
+    glEnd();
+    
+    // Mark polygon pixels
+    for (int x = 100; x <= 200; x++) {
+        pixels[x][100] = 1;
+    }
+    
+    // Top edge
+    for (int x = 100; x <= 200; x++) {
+        pixels[x][200] = 1;
+    }
+    
+    // Left edge
+    for (int y = 100; y <= 200; y++) {
+        pixels[100][y] = 1;
+    }
+    
+    // Right edge
+    for (int y = 100; y <= 200; y++) {
+        pixels[200][y] = 1;
+    }
+}
+
+void enqueue(int x, int y) {
+    queue[rear][0] = x;
+    queue[rear][1] = y;
+    rear++;
+}
+
+void dequeue(int *x, int *y) {
+    *x = queue[front][0];
+    *y = queue[front][1];
+    front++;
+}
+
+void floodFill() {
+    if (front == rear) {
+        filling = false;
+        return;
+    }
+
+    int x, y;
+    dequeue(&x, &y);
+
+    if (x < 0 || x >= WINDOW_WIDTH || y < 0 || y >= WINDOW_HEIGHT) return;
+    if (pixels[x][y] != 0) return;
+
+    pixels[x][y] = 2;
+    glColor3f(0.0, 0.0, 1.0);
+    drawPixel(x, y);
+
+    enqueue(x + 1, y);
+    enqueue(x, y + 1);
+    enqueue(x - 1, y);
+    enqueue(x, y - 1);
+    enqueue(x-1,y-1);
+    enqueue(x-1,y+1);
+    enqueue(x+1,y-1);
+    enqueue(x+1,y+1);
+
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    drawPolygon();
+    glFlush();
+}
+
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && !filling) {
+        front = rear = 0;  // Clear the queue
+        enqueue(x, WINDOW_HEIGHT - y);
+        filling = true;
+    }
+}
+
+void timer(int value) {
+    if (filling) {
+        floodFill();
+    }
+    glutTimerFunc(0.00001, timer, 0);  // 10ms delay
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    glutCreateWindow("Flood Fill with Delay (Click to Start)");
+    init();
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse);
+    glutTimerFunc(0, timer, 0);
+    glutMainLoop();
+    return 0;
+}

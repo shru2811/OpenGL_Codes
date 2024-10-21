@@ -1,0 +1,326 @@
+#include <GL/glut.h>
+#include <cmath>
+
+bool isDay = true;
+
+void drawSun(float cx, float cy, float radius, int num_segments){
+    // Change sun color based on day/night mode
+    if (isDay) {
+        glColor3f(1.0f, 1.0f, 0.0f); // Yellow for day
+    } else {
+        glColor3f(1.0f, 1.0f, 1.0f); // White for night
+    }
+
+    glBegin(GL_TRIANGLE_FAN);
+        glVertex2f(cx, cy);
+        for(int i=0;i<=num_segments;i++){
+            float theta = 2.0f * 3.1415926f * float(i) / float(num_segments);
+            float x = radius * cosf(theta);
+            float y = radius * sinf(theta);
+            glVertex2f(x+cx, y+cy);
+        }
+        glEnd();
+}
+
+void drawCloud(float cx1, float cy1, float cx2, float cy2,float radius, int num_segments){
+    glColor3f(1.0f, 1.0f,1.0f);
+
+    glBegin(GL_TRIANGLE_FAN);
+        glVertex2f(cx1, cy1);
+        for(int i=0;i<=num_segments;i++){
+            float theta = 2.0f * 3.1415926f * float(i) / float(num_segments);
+            float x = radius * cosf(theta);
+            float y = radius * sinf(theta);
+            glVertex2f(x+cx1, y+cy1);
+        }
+        glEnd();
+    glBegin(GL_TRIANGLE_FAN);
+        glVertex2f(cx2, cy2);
+        for(int i=0;i<=num_segments;i++){
+            float theta = 2.0f * 3.1415926f * float(i) / float(num_segments);
+            float x = radius * cosf(theta);
+            float y = radius * sinf(theta);
+            glVertex2f(x+cx2, y+cy2);
+        }
+        glEnd();
+}
+
+void RenderBitmapString(float x, float y, void* font, const char* string){
+    const char* c;
+    glRasterPos2f(x,y);
+    for(c=string; *c!='\0';c++){
+        glutBitmapCharacter(font, *c);
+    }
+}
+
+void display() {
+
+    if (isDay) {
+        glClearColor(0.53f, 0.81f, 0.92f, 1.0f); // Sky blue for day
+    } else {
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black for night
+    }
+
+    glClear(GL_COLOR_BUFFER_BIT);
+    //sun
+    drawSun(0.8f, 0.8f, 0.1f, 100);
+    //cloud
+    drawCloud(0.3f,0.7f,0.4f,0.7f,0.1f,100);
+    drawCloud(-0.3f,0.9f,-0.2f,0.9f,0.1f,100);
+    drawCloud(-0.7f,0.6f,-0.6f,0.6f,0.1f,100);
+
+    //roof
+    glColor3f(0.55f,0.27f,0.07f);
+    glBegin(GL_QUADS);
+        glVertex2f(-0.6,0.4);
+        glVertex2f(0.6,0.4);
+        glVertex2f(0.6,0);
+        glVertex2f(-0.6,0);
+    glEnd();
+    glColor3f(0.72f,0.45f,0.20f);
+    glBegin(GL_TRIANGLES);
+        glVertex2f(-0.3,0);
+        glVertex2f(0.3,0);
+        glVertex2f(0,0.5);
+        
+    glEnd();
+    glColor3f(1.0f,1.0f,1.0f);
+    glBegin(GL_LINES);
+        glVertex2f(-0.3,0);
+        glVertex2f(0,0.5);
+    glEnd();
+    glBegin(GL_LINES);
+        glVertex2f(0.3,0);
+        glVertex2f(0,0.5);
+    glEnd();
+    glFlush();
+    //middle
+    glColor3f(0.3f,0.3f,0.3f);
+    glBegin(GL_QUADS);
+        glVertex2f(-0.75,-0.05);
+        glVertex2f(0.75,-0.05);
+        glVertex2f(0.75,0);
+        glVertex2f(-0.75,0);
+    glEnd();
+    glFlush();
+    //main wall
+    glColor3f(0.96f,0.87f,0.70f);
+    glBegin(GL_QUADS);
+        glVertex2f(-0.6,-0.7);
+        glVertex2f(0.6,-0.7);
+        glVertex2f(0.6,-0.05);
+        glVertex2f(-0.6,-0.05);
+    glEnd();
+    glFlush();
+    //windows
+    glColor3f(0.54f,0.27f,0.07f);
+    glBegin(GL_QUADS);
+        glVertex2f(-0.4,-0.3);
+        glVertex2f(-0.2,-0.3);
+        glVertex2f(-0.2,-0.1);
+        glVertex2f(-0.4,-0.1);
+    glEnd();
+    glFlush();
+    glBegin(GL_QUADS);
+        glVertex2f(0.2,-0.3);
+        glVertex2f(0.4,-0.3);
+        glVertex2f(0.4,-0.1);
+        glVertex2f(0.2,-0.1);
+    glEnd();
+    glFlush();
+    //window lines
+    glLineWidth(3.0f);
+    glColor3f(1.0f,1.0f,1.0f);
+    glBegin(GL_LINES);
+        glVertex2f(0.3,-0.1);
+        glVertex2f(0.3,-0.3);
+    glEnd();
+    glFlush();
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+        glVertex2f(-0.2,-0.2);
+        glVertex2f(-0.4,-0.2);
+    glEnd();
+    glFlush();
+    glBegin(GL_LINES);
+        glVertex2f(-0.3,-0.1);
+        glVertex2f(-0.3,-0.3);
+    glEnd();
+    glFlush();
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+        glVertex2f(0.2,-0.2);
+        glVertex2f(0.4,-0.2);
+    glEnd();
+    glFlush();
+    //door
+    glColor3f(0.54f,0.27f,0.07f);
+    glBegin(GL_QUADS);
+        glVertex2f(-0.1,-0.7);
+        glVertex2f(0.1,-0.7);
+        glVertex2f(0.1,-0.3);
+        glVertex2f(-0.1,-0.3);
+    glEnd();
+    glFlush();
+    glColor3f(1.0f,1.0f,1.0f);
+    glBegin(GL_LINES);
+        glVertex2f(-0.1,-0.7);
+        glVertex2f(-0.1,-0.3);
+    glEnd();
+    glBegin(GL_LINES);
+        glVertex2f(-0.1,-0.3);
+        glVertex2f(0.1,-0.3);
+    glEnd();
+    glBegin(GL_LINES);
+        glVertex2f(0.1,-0.3);
+        glVertex2f(0.1,-0.7);
+    glEnd();
+    glFlush();
+    //door knob
+    glPointSize(10.0f);
+    glBegin(GL_POINTS);
+        glVertex2f(-0.05, -0.45);
+    glEnd();
+    glFlush();
+    //front deck
+    glColor3f(0.72f,0.45f,0.20f);
+    glBegin(GL_QUADS);
+        glVertex2f(-0.7,-0.8);
+        glVertex2f(0.7,-0.8);
+        glVertex2f(0.6,-0.7);
+        glVertex2f(-0.6,-0.7);
+    glEnd();
+    glFlush();
+
+    glBegin(GL_QUADS);
+        glVertex2f(-0.7,-0.9);
+        glVertex2f(0.7,-0.9);
+        glVertex2f(0.7,-0.8);
+        glVertex2f(-0.7,-0.8);
+    glEnd();
+    glFlush();
+    glColor3f(0.4f,0.4f,0.4f);
+    glBegin(GL_QUADS);
+        glVertex2f(-0.3,-0.8);
+        glVertex2f(0.3,-0.8);
+        glVertex2f(0.2,-0.7);
+        glVertex2f(-0.2,-0.7);
+    glEnd();
+    glFlush();
+    glColor3f(1.0f,1.0f,1.0f);
+    glBegin(GL_LINES);
+        glVertex2f(-0.6,-0.7);
+        glVertex2f(-0.7,-0.8);
+    glEnd();
+    glBegin(GL_LINES);
+        glVertex2f(0.7,-0.8);
+        glVertex2f(-0.7,-0.8);
+    glEnd();
+    glBegin(GL_LINES);
+        glVertex2f(0.7,-0.8);
+        glVertex2f(0.6,-0.7);
+    glEnd();
+    //chimney
+    glColor3f(0.3f,0.3f,0.3f);
+    glBegin(GL_QUADS);
+        glVertex2f(-0.4,0.4);
+        glVertex2f(-0.2,0.4);
+        glVertex2f(-0.2,0.55);
+        glVertex2f(-0.4,0.55);
+    glEnd();
+    glFlush();
+    glColor3f(0.6f,0.6f,0.6f);
+    glBegin(GL_QUADS);
+        glVertex2f(-0.45,0.55);
+        glVertex2f(-0.15,0.55);
+        glVertex2f(-0.15,0.6);
+        glVertex2f(-0.45,0.6);
+    glEnd();
+    glFlush();
+    //ground
+    glColor3f(0.13f,0.55f,0.13f);
+    glBegin(GL_QUADS);
+        glVertex2f(-1.0,-1.0);
+        glVertex2f(1.0,-1.0);
+        glVertex2f(1.0,-0.9);
+        glVertex2f(-1.0,-0.9);
+    glEnd();
+    glFlush();
+    glColor3f(0.13f,0.55f,0.13f);
+    glBegin(GL_POLYGON);
+        glVertex2f(0.7,-0.8);
+        glVertex2f(0.7,-0.9);
+        glVertex2f(1.0,-0.9);
+        glVertex2f(1.0,-0.7);
+        glVertex2f(0.6,-0.7);
+    glEnd();
+    glFlush();
+    glColor3f(0.13f,0.55f,0.13f);
+    glBegin(GL_POLYGON);
+        glVertex2f(-1.0,-0.9);
+        glVertex2f(-0.7,-0.9);
+        glVertex2f(-0.7,-0.8);
+        glVertex2f(-0.6,-0.7);
+        glVertex2f(-1.0,-0.7);
+    glEnd();
+    glFlush();
+    //small trees
+    //vase
+    glColor3f(0.5f,0.5f,0.5f);
+    glBegin(GL_QUADS);
+        glVertex2f(0.7,-0.7);
+        glVertex2f(0.8,-0.7);
+        glVertex2f(0.85,-0.6);
+        glVertex2f(0.65,-0.6);
+    glEnd();
+    glFlush();
+    //stem
+    glColor3f(0.13f,0.55f,0.13f);
+    glBegin(GL_QUADS);
+        glVertex2f(0.74,-0.6);
+        glVertex2f(0.76,-0.6);
+        glVertex2f(0.76,-0.5);
+        glVertex2f(0.74,-0.5);
+    glEnd();
+    //flower
+    glColor3f(1.0f,0.0f,0.0f);
+    glPointSize(40.0f);
+    glBegin(GL_POINTS);
+        glVertex2f(0.75, -0.45);
+    glEnd();
+
+    if (isDay) {
+        glColor4f(0.0f, 0.0f, 0.0f, 1.0f); // black for day
+    } else {
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f); 
+         // white for night
+    }
+    RenderBitmapString(-0.9, 0.9, GLUT_BITMAP_HELVETICA_18, "SHRUTI SRIVASTAVA");
+    RenderBitmapString(-0.9, 0.8, GLUT_BITMAP_HELVETICA_18, "500105401");
+
+
+    glFlush();
+}
+
+
+
+void mouse(int button, int state, int x, int y) {
+    // Toggle day/night mode on mouse click
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        isDay = !isDay; // Toggle between day and night
+        glutPostRedisplay(); // Redraw the scene
+    }
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(800, 800);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("OpenGL Hut");
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse); // Register mouse click callback
+
+    glutMainLoop();
+    return 0;
+}

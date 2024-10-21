@@ -1,0 +1,129 @@
+#include <GL/glut.h>
+#include <vector>
+#include <ctime>
+
+std::vector<float> pointsX; // Store x-coordinates of points
+std::vector<float> pointsY; // Store y-coordinates of points
+bool drawPolygon = false;   // Flag to determine when to draw the polygon boundary
+bool polygonCreated = false;
+
+// Window dimensions
+const int WINDOW_WIDTH = 800;
+const int WINDOW_HEIGHT = 600;
+
+void delay(float ms) {
+    clock_t goal = ms + clock();
+    while (goal > clock());
+}
+
+void bound_it(int x, int y, float* fillColor, float* bc) {
+    float color[3];
+    glReadPixels(x, WINDOW_HEIGHT - y - 1, 1, 1, GL_RGB, GL_FLOAT, color); // Correctly read pixel color
+
+    // Check if the current pixel is not a boundary and not already filled
+    if ((color[0] != bc[0] || color[1] != bc[1] || color[2] != bc[2]) && 
+        (color[0] != fillColor[0] || color[1] != fillColor[1] || color[2] != fillColor[2])) {
+        
+        // Set the pixel color
+        glColor3f(fillColor[0], fillColor[1], fillColor[2]);
+        glBegin(GL_POINTS);
+            glVertex2i(x, y);
+        glEnd();
+        glFlush(); // Flush the buffer to make the color change visible
+
+        // Add a small delay to visualize the filling
+        delay(1); 
+
+        // Recursively fill the neighboring pixels
+        bound_it(x + 1, y, fillColor, bc); // right
+        bound_it(x - 1, y, fillColor, bc); // left
+        bound_it(x, y + 1, fillColor, bc); // up
+        bound_it(x, y - 1, fillColor, bc); // down
+    }
+}
+
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT); // Clear the screen
+
+    // Draw points where the user clicks
+    glColor3f(1.0, 0.0, 0.0); // Set color for points (red)
+    glPointSize(5.0);
+    glBegin(GL_POINTS);
+    for (size_t i = 0; i < pointsX.size(); ++i) {
+        glVertex2f(pointsX[i], pointsY[i]);
+    }
+    glEnd();
+
+    // If "Enter" is pressed, draw the polygon boundary
+    if (drawPolygon && pointsX.size() > 2) {
+        glColor3f(1.0, 1.0, 1.0); // Set color for the polygon boundary (white)
+        glBegin(GL_LINE_LOOP);    // Use GL_LINE_LOOP to draw the boundary
+        for (size_t i = 0; i < pointsX.size(); ++i) {
+            glVertex2f(pointsX[i], pointsY[i]);
+        }
+        glEnd();
+    }
+
+    glutSwapBuffers();
+}
+
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        if (polygonCreated) {
+            
+            float bCol[] = {1.0f, 1.0f, 1.0f}; // Boundary color (white)
+            float color[] = {0.0f, 0.0f, 1.0f}; // Fill color (blue)
+            // Start the boundary fill algorithm
+            bound_it(x, y, color, bCol);
+        } else {
+            // Convert mouse coordinates to OpenGL coordinates
+            float normalizedX = (float)x / (WINDOW_WIDTH / 2) - 1.0f;
+            float normalizedY = 1.0f - (float)y / (WINDOW_HEIGHT / 2);
+
+            // Store the clicked point
+            pointsX.push_back(normalizedX);
+            pointsY.push_back(normalizedY);
+            glutPostRedisplay(); // Redraw the screen
+        }
+    }
+    else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
+        // Clear the points and reset the polygon
+        pointsX.clear();
+        pointsY.clear();
+        drawPolygon = false; // Reset the flag
+        polygonCreated = false; // Reset the polygon created flag
+
+        // Redraw the screen (now empty)
+        glutPostRedisplay();
+    }
+}
+
+void keyboard(unsigned char key, int x, int y) {
+    if (key == 13) { // "Enter" key (ASCII code 13)
+        drawPolygon = true;  // Set the flag to true to draw the polygon boundary
+        polygonCreated = true;
+        glutPostRedisplay(); // Redraw the screen to show the boundary
+    }
+}
+
+void init() {
+    glClearColor(0.0, 0.0, 0.0, 1.0); // Background color (black)
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(-1.0, 1.0, -1.0, 1.0); // Set the coordinate system to cover the whole window
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+    glutCreateWindow("Polygon Boundary Drawing with Filling");
+
+    init();
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse);
+    glutKeyboardFunc(keyboard); // Handle keyboard input
+
+    glutMainLoop();
+    return 0;
+}

@@ -1,0 +1,131 @@
+#include <GL/glut.h>
+#include <bits/stdc++.h>
+using namespace std;
+
+int xcentre, ycentre, radius;
+int pixels[800][800] = {0}; // Adjust size for boundary marking
+int pixelQueue[800 * 800][2]; // Queue for boundary fill
+int front = 0, rear = 0;
+bool filling = false;
+
+void draw_pixel(int x, int y) {
+	
+    glBegin(GL_POINTS);
+	if(x<0 && y<0)	glColor3f(1.0,0.0,0.0);
+	if(x<0 && y>0)	glColor3f(0.0,1.0,0.0);
+	if(x>0 && y>0)	glColor3f(0.0,0.0,1.0);
+	if(x>0 && y<0)	glColor3f(1.0,1.0,1.0);
+	if(filling) glColor3f(0.5,0.0,0.5);
+
+    glVertex2i(x + xcentre, y + ycentre);
+    glEnd();
+    glFlush();
+    pixels[x + 400][y + 400] = 1; // Mark the boundary pixel
+}
+
+void initialiseVals() {
+    glClear(GL_COLOR_BUFFER_BIT); // clears existing buffer values
+    glClearColor(1.0, 1.0, 1.0, 0.0); // color set for the window
+    //glColor3f(1.0, 1.0, 1.0); // color red is used to draw
+    glMatrixMode(GL_PROJECTION); // projection model used
+    gluOrtho2D(-400, 400, -400, 400); // orthographic window boundary defined
+}
+
+bool insideCircle(int x, int y) {
+    return (x * x + y * y <= radius * radius); // Ensure the pixel lies inside the circle
+}
+
+void floodFill() {
+    if (front == rear) {
+        filling = false;
+        return;
+    }
+
+    int x = pixelQueue[front][0];
+    int y = pixelQueue[front][1];
+    front++;
+
+    if (x < -400 || x >= 400 || y < -400 || y >= 400 || pixels[x + 400][y + 400] != 0 || !insideCircle(x, y))
+        return;
+
+    pixels[x + 400][y + 400] = 2; // Mark as filled
+    //glColor3f(0.5, 0.0, 0.5); // set color to purple
+    draw_pixel(x, y); // Fill pixel
+
+    // Add neighboring pixels to queue
+    pixelQueue[rear][0] = x + 1; pixelQueue[rear++][1] = y;
+    pixelQueue[rear][0] = x - 1; pixelQueue[rear++][1] = y;
+    pixelQueue[rear][0] = x; pixelQueue[rear++][1] = y + 1;
+    pixelQueue[rear][0] = x; pixelQueue[rear++][1] = y - 1;
+}
+
+void draw_circle() {
+    int x = 0;
+    int y = radius;
+    int di = 5 - 4 * radius;
+
+    draw_pixel(x, y);
+
+    while (y > x) {
+        x++;
+        if (di < 0) {
+            di += 8 * x + 4;
+        } else {
+            y--;
+            di += 8 * (x - y) + 4;
+        }
+
+        draw_pixel(x, y);
+        draw_pixel(x, -y);
+        draw_pixel(-x, y);
+        draw_pixel(-x, -y);
+        draw_pixel(y, x);
+        draw_pixel(-y, x);
+        draw_pixel(y, -x);
+        draw_pixel(-y, -x);
+    }
+}
+
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && !filling) {
+        front = rear = 0;
+        int mouseX = x - 400;
+        int mouseY = 400 - y;
+
+        // Check if click is inside the circle
+        if ((mouseX - xcentre) * (mouseX - xcentre) + (mouseY - ycentre) * (mouseY - ycentre) <= radius * radius) {
+            pixelQueue[rear][0] = mouseX - xcentre;
+            pixelQueue[rear++][1] = mouseY - ycentre;
+            filling = true;
+        }
+        if (filling) {
+        floodFill();
+    }
+    }
+}
+
+void display() {
+    draw_circle();
+    glFlush();
+}
+
+int main(int argc, char** argv) {
+    cout << "Enter the x-coordinate for the center of the circle:\n";
+    cin >> xcentre;
+    cout << "Enter the y-coordinate for the center of the circle:\n";
+    cin >> ycentre;
+    cout << "Enter the radius of the circle:\n";
+    cin >> radius;
+
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(800, 800);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("Midpoint Circle with Boundary Fill");
+    initialiseVals();
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse);
+    //glutTimerFunc(0, timer, 0);
+    glutMainLoop();
+    return 0;
+}

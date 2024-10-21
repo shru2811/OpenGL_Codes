@@ -1,0 +1,184 @@
+#include <GL/glut.h>
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
+
+using namespace std;
+
+
+// Radii of the ellipse 
+int rx, ry;
+
+// Center of the ellipse (set by mouse click)
+int xc = 0, yc = 0;
+bool isCenterSet = false;
+
+GLfloat colors[2][3] = {
+    {1.0, 0.0, 0.0}, // Red
+    {0.0, 0.0, 1.0}, // Blue
+};
+
+// Function to draw a pixel with a given color
+void drawPixel(int x, int y, GLfloat color[3]) {
+    glColor3fv(color);
+    glBegin(GL_POINTS);
+    glVertex2i(x, y);
+    glEnd();
+}
+
+// Function to draw text on the screen
+void drawText(float x, float y, std::string text) {
+    glColor3f(1.0, 1.0, 1.0);  // White color for text
+    glRasterPos2f(x, y);
+    for (char& c : text) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+    }
+}
+
+// Midpoint Ellipse Algorithm
+void drawEllipse(int xc, int yc, int rx, int ry) {
+    float dx, dy, d1, d2, x, y;
+    x = 0;
+    y = ry;
+
+    // Initial decision parameter of region 1
+    d1 = (ry * ry) - (rx * rx * ry) + (0.25 * rx * rx);
+    dx = 2 * ry * ry * x;
+    dy = 2 * rx * rx * y;
+
+    // Region 1:  slope < 1
+    while (dx < dy) {
+        //marking in all the quadrant : region1 with red color
+        drawPixel(xc + x, yc + y, colors[0]); //quadrant 1
+        drawPixel(xc - x, yc + y, colors[0]); //quadrant 2
+        drawPixel(xc + x, yc - y, colors[0]); //quadrant 3
+        drawPixel(xc - x, yc - y, colors[0]); //quadrant 4
+
+        if (d1 < 0) {
+            x++;
+            dx = dx + (2 * ry * ry);
+            d1 = d1 + dx + (ry * ry);
+        } else {
+            x++;
+            y--;
+            dx = dx + (2 * ry * ry);
+            dy = dy - (2 * rx * rx);
+            d1 = d1 + dx - dy + (ry * ry);
+        }
+    }
+
+    // Decision parameter of region 2
+    d2 = ((ry * ry) * ((x + 0.5) * (x + 0.5))) + ((rx * rx) * ((y - 1) * (y - 1))) - (rx * rx * ry * ry);
+
+    // Region 2: slope > 1
+    while (y >= 0) {
+        //similar to region 1, region2 with blue color
+        drawPixel(xc + x, yc + y, colors[1]);
+        drawPixel(xc - x, yc + y, colors[1]);
+        drawPixel(xc + x, yc - y, colors[1]);
+        drawPixel(xc - x, yc - y, colors[1]);
+
+        if (d2 > 0) {
+            y--;
+            dy = dy - (2 * rx * rx);
+            d2 = d2 + (rx * rx) - dy;
+        } else {
+            y--;
+            x++;
+            dx = dx + (2 * ry * ry);
+            dy = dy - (2 * rx * rx);
+            d2 = d2 + dx - dy + (rx * rx);
+        }
+    }
+}
+
+std::string formatCoordinate(float x, float y)
+{
+    std::ostringstream stream;
+    stream << std::fixed << std::setprecision(2);
+    stream << "(" << (x >= 0 ? "+" : "") << x << ", " << (y >= 0 ? "+" : "") << y << ")";
+    return stream.str();
+}
+
+// Function to draw the center point and mark radii
+void drawCenterAndRadii(int xc, int yc, int rx, int ry) {
+    GLfloat white[] = { 1.0, 1.0, 1.0 };  // White color
+
+    // Draw center point
+    drawPixel(xc, yc, white);
+    drawText(xc-30,yc-30, formatCoordinate(xc, yc));
+
+    // Draw radii lines
+    glBegin(GL_LINES);
+        glVertex2i(xc, yc);   // Line for x radius
+        glVertex2i(xc + rx, yc);
+
+        glVertex2i(xc, yc);   // Line for y radius
+        glVertex2i(xc, yc + ry);
+    glEnd();
+
+    // Display radius values as text
+    std::stringstream rxText, ryText;
+    rxText << "rx = " << rx;
+    ryText << "ry = " << ry;
+
+    drawText(xc + rx + 10, yc, rxText.str());  // Display x radius
+    drawText(xc, yc + ry + 10, ryText.str());  // Display y radius
+}
+
+// Mouse callback function to set the center of the ellipse
+void mouse(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        xc = x - 300;   // Adjusting for window coordinates (assuming window size 600x600)
+        yc = 300 - y;   // Flip y-axis to OpenGL coordinates
+        isCenterSet = true;
+        glutPostRedisplay(); // Trigger a redraw after setting the center
+    }
+    if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
+        exit(0);
+    }
+}
+
+// Display function
+void display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    if (isCenterSet) {
+        drawEllipse(xc, yc, rx, ry);
+        drawCenterAndRadii(xc, yc, rx, ry);
+    }
+    drawText(-260,-260, "Shruti Srivastava 500105401");
+    drawText(-70,260, "Mid Point Ellipse Algorithm");
+
+    glFlush();
+}
+
+// Initialize OpenGL
+void init() {
+    glClearColor(0.0, 0.0, 0.0, 0.0);  // Set background color to black
+    glColor3f(1.0, 0.0, 0.0);          // Set default drawing color
+    glPointSize(2.0);                  // Set point size
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(-300, 300, -300, 300);  // Set the coordinate system
+}
+
+// Main function
+int main(int argc, char** argv) {
+    // Take input for the radii from the user before creating the window
+    cout << "Enter the radii of the ellipse (rx, ry): ";
+    cin >> rx >> ry;
+
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(600, 600);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("colored Ellipse");
+
+    init();
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse);  // Register mouse callback function
+    glutMainLoop();
+    return 0;
+}

@@ -1,0 +1,182 @@
+#include <GL/glut.h>
+#include <vector>
+#include <cmath>
+#include <string>
+#include <iomanip>
+#include <sstream>
+
+// Vector to store all pairs of points
+std::vector<std::pair<float, float>> points;
+
+std::string formatCoordinate(float x, float y)
+{
+    std::ostringstream stream;
+    stream << std::fixed << std::setprecision(2);
+    stream << "(" << (x >= 0 ? "+" : "") << x << ", " << (y >= 0 ? "+" : "") << y << ")";
+    return stream.str();
+}
+
+void drawText(float x, float y, const std::string &text)
+{
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glRasterPos2f(x, y);
+    for (char c : text)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+    }
+}
+
+void drawDDALine(float x0, float y0, float x1, float y1)
+{
+    float dx = x1 - x0;
+    float dy = y1 - y0;
+    float steps = std::max(std::abs(dx), std::abs(dy));
+
+    float xIncrement = dx / steps;
+    float yIncrement = dy / steps;
+    float x = x0;
+    float y = y0;
+
+    glBegin(GL_POINTS);
+    for (int i = 0; i <= steps; i++)
+    {
+        glVertex2f(x, y);
+        x += xIncrement;
+        y += yIncrement;
+    }
+    glEnd();
+}
+
+void drawResetButton()
+{
+    glColor3f(0.8f, 0.8f, 0.8f);
+    glBegin(GL_QUADS);
+    glVertex2f(700, 550);
+    glVertex2f(780, 550);
+    glVertex2f(780, 580);
+    glVertex2f(700, 580);
+    glEnd();
+
+    drawText(710, 560, "Reset");
+}
+
+void display()
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    // Display the coordinate system
+    glLineWidth(2.0f);
+    glColor3f(0.6f, 0.6f, 0.6f);    //gray colored coordinate Axes
+
+    glBegin(GL_LINES);
+
+    glVertex2f(0, 300); // x axis
+    glVertex2f(800, 300);
+
+    glVertex2f(400, 0); // y axis
+    glVertex2f(400, 600);
+
+    glEnd();
+
+    glLineWidth(1.0f); // Set line thickness
+
+    // Draw all stored lines
+    for (size_t i = 0; i + 1 < points.size(); i += 2)
+    {
+        glColor3f(0.0f, 0.0f, 0.5f); // Set line color to Dark Blue
+        drawDDALine(points[i].first, points[i].second, points[i + 1].first, points[i + 1].second);
+
+        float x0 = points[i].first - 400;
+        float y0 = points[i].second - 300;
+        float x1 = points[i + 1].first - 400;
+        float y1 = points[i + 1].second - 300;
+
+        // Draw the coordinate texts
+        drawText(points[i].first + 10, points[i].second, formatCoordinate(x0, y0));
+        drawText(points[i + 1].first + 10, points[i + 1].second, formatCoordinate(x1, y1));
+
+        // Calculate and display distance
+        float dx = x1 - x0;
+        float dy = y1 - y0;
+        float distance = std::sqrt(dx * dx + dy * dy);
+        std::ostringstream distanceText;
+        distanceText << "Width: " << std::fixed << std::setprecision(2) << distance;
+        drawText((points[i].first + points[i + 1].first) / 2, (points[i].second + points[i + 1].second) / 2, distanceText.str());
+        
+        if(dx!=0){
+            float slope = dy/dx;
+            drawText((points[i].first + points[i+1].first)/2, (points[i].second + points[i+1].second)/2-20, "Slope: "+std::to_string(slope));
+        }
+        else{
+            float slope = dy/dx;
+            drawText((points[i].first + points[i+1].first)/2, (points[i].second + points[i+1].second)/2-20, "Slope: Undefined");
+        }
+    }
+
+    // Draw points
+    glPointSize(5.0f);           // Set point size
+    glColor3f(1.0f, 1.0f, 0.0f); // Set point color to yellow
+    glBegin(GL_POINTS);
+    for (auto &point : points)
+    {
+        glVertex2f(point.first, point.second);
+    }
+    glEnd();
+
+    drawResetButton();
+
+    drawText(500.0f, 30.0f, "Shruti Srivastava Sap: 500105401");
+
+    glutSwapBuffers();
+}
+
+void resetLines()
+{
+    points.clear();
+    glutPostRedisplay();
+}
+
+void reshape(int w, int h)
+{
+    glViewport(0, 0, w, h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0.0, w, 0.0, h);
+    glMatrixMode(GL_MODELVIEW);
+}
+
+void mouse(int button, int state, int x, int y)
+{
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+    {
+        if (x >= 700 && (glutGet(GLUT_WINDOW_HEIGHT) - y) >= 550 && (glutGet(GLUT_WINDOW_HEIGHT) - y) <= 580)
+        {
+            resetLines();
+        }
+        else
+        {
+            float xCoord = static_cast<float>(x);
+            float yCoord = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT) - y);
+
+            points.push_back({xCoord, yCoord});
+
+            glutPostRedisplay();
+        }
+    }
+}
+
+int main(int argc, char **argv)
+{
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutInitWindowSize(800, 600);
+    glutCreateWindow("LineDrawing Algorithm: DDA (Digital Differential Analyzer)");
+
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glutDisplayFunc(display);
+    glutReshapeFunc(reshape);
+    glutMouseFunc(mouse);
+
+    glutMainLoop();
+    return 0;
+}

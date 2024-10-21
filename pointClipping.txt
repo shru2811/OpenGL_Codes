@@ -1,0 +1,174 @@
+#include <GL/glut.h>
+#include <vector>
+#include <cmath>
+#include <string>
+#include <iomanip>
+#include <sstream>
+
+// Vector to store all pairs of points
+std::vector<std::pair<float, float>> points;
+
+// Corrected clipping boundary to match the rectangle in the window
+float xmin = 100.0;
+float ymin = 100.0;
+float xmax = 500.0;
+float ymax = 500.0;
+
+bool checkClipping = false;  // Flag to check if clipping needs to be performed
+
+// Function to format the coordinate text
+std::string formatCoordinate(float x, float y)
+{
+    std::ostringstream stream;
+    stream << std::fixed << std::setprecision(2);
+    stream << "(" << (x >= 0 ? "+" : "") << x << ", " << (y >= 0 ? "+" : "") << y << ")";
+    return stream.str();
+}
+
+// Function to draw text on screen
+void drawText(float x, float y, const std::string &text)
+{
+    glColor3f(0.878f, 1.0f, 1.0f);
+    glRasterPos2f(x, y);
+    for (char c : text)
+    {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, c);
+    }
+}
+
+// Function to check if a point is inside the clipping region
+void pointClipping(float x, float y)
+{
+    if (x <= xmax && x >= xmin && y <= ymax && y >= ymin)
+    {
+        drawText(x + 5, y + 5, "Inside");
+    }
+    else
+    {
+        drawText(x + 5, y + 5, "Outside");
+    }
+}
+
+// Function to draw the reset button
+void drawResetButton()
+{
+    glColor3f(0.2f, 0.2f, 0.2f);
+    glBegin(GL_QUADS);
+    glVertex2f(700, 550);
+    glVertex2f(780, 550);
+    glVertex2f(780, 580);
+    glVertex2f(700, 580);
+    glEnd();
+
+    drawText(710, 560, "Reset");
+}
+
+// Display function to render the scene
+void display()
+{
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    // Draw the rectangular clipping region
+    glColor3f(1.0, 1.0, 1.0);
+    glBegin(GL_LINE_LOOP);
+    glVertex2d(xmin, ymin);
+    glVertex2d(xmax, ymin);
+    glVertex2d(xmax, ymax);
+    glVertex2d(xmin, ymax);
+    glEnd();
+
+    drawResetButton();
+
+    // Draw points
+    glPointSize(6.0f);
+    glColor3f(1.0f, 1.0f, 1.0f); // Set point color to white
+    glBegin(GL_POINTS);
+    for (auto &point : points)
+    {
+        glVertex2f(point.first, point.second);
+    }
+    glEnd();
+
+    // If space bar was pressed, check clipping for all points
+    if (checkClipping)
+    {
+        for (auto &point : points)
+        {
+            pointClipping(point.first, point.second);
+        }
+    }
+
+    // Draw name and ID
+    drawText(500.0f, 30.0f, "Shruti Srivastava Sap: 500105401");
+
+    glutSwapBuffers();
+}
+
+
+// Function to reset the points and clipping state
+void resetLines()
+{
+    points.clear();
+    checkClipping = false;  // Reset clipping check
+    glutPostRedisplay();
+}
+
+// Reshape function to maintain aspect ratio
+void reshape(int w, int h)
+{
+    glViewport(0, 0, w, h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0.0, w, 0.0, h);
+    glMatrixMode(GL_MODELVIEW);
+}
+
+// Mouse callback function
+void mouse(int button, int state, int x, int y)
+{
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN)
+    {
+        if (x >= 700 && (glutGet(GLUT_WINDOW_HEIGHT) - y) >= 550 && (glutGet(GLUT_WINDOW_HEIGHT) - y) <= 580)
+        {
+            resetLines();
+        }
+        else
+        {
+            float xCoord = static_cast<float>(x);
+            float yCoord = static_cast<float>(glutGet(GLUT_WINDOW_HEIGHT) - y);
+
+            points.push_back({xCoord, yCoord});
+            glutPostRedisplay();
+        }
+    }
+    if(button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN){
+        exit(0);
+    }
+}
+
+// Keyboard callback function
+void keyboard(unsigned char key, int x, int y)
+{
+    if (key == 32) // Check if space bar is pressed (ASCII code 32)
+    {
+        checkClipping = true;  // Activate clipping check
+        glutPostRedisplay();
+    }
+}
+
+int main(int argc, char **argv)
+{
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutInitWindowSize(800, 600);
+    glutCreateWindow("Point Clipping");
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);  // Black background
+    glutDisplayFunc(display);
+    glutReshapeFunc(reshape);
+    glutMouseFunc(mouse);
+    glutKeyboardFunc(keyboard);
+
+    glutMainLoop();
+    return 0;
+}
